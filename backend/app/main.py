@@ -6,7 +6,7 @@ from typing import List, Annotated
 from .models import User, Fruit, CreateFruit
 from .database import DB
 
-origins = ["http://localhost:5173"]
+origins = ["http://localhost:5173", "https://fruitsback.fpr.lol"]
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
