@@ -1,12 +1,10 @@
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Annotated
-from datetime import datetime
-from starlette.middleware.cors import CORSMiddleware
-from itertools import count
-import time
+from .models import User, Fruit, CreateFruit
+from .database import DB
 
 origins = ["http://localhost:5173"]
 app = FastAPI()
@@ -21,64 +19,12 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class User(BaseModel):
-    username: str
-    email: str | None = None
-    full_name: str | None = None
-
-
-class UserInDB(User):
-    hashed_password: str
-
-
-class Fruit(BaseModel):
-    id: int
-    name: str
-    created_at: datetime
-
-
-class CreateFruit(BaseModel):
-    name: str
-
-
-class Fruits(dict):
-    pass
-
-
-users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "fakehashedsecret",
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-    },
-}
-fruits_db = Fruits(
-    {
-        1: Fruit(id=1, name="apple", created_at=datetime.now()),
-        2: Fruit(id=2, name="banana", created_at=datetime.now()),
-        3: Fruit(id=3, name="orange", created_at=datetime.now()),
-    }
-)
-fruit_id_counter = count(4)
-
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
+def get_user(username: str):
+    return DB.users.get(username)
 
 
 def fake_decode_token(token):
-    # This doesn't provide any security at all
-    # Check the next version
-    user = get_user(users_db, token)
+    user = get_user(token)
     return user
 
 
@@ -97,16 +43,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     return user
 
 
-def get_fruits():
-    return fruits_db.values()
-
-
 @app.post("/token")
 async def login(username: str, password: str):
-    user_dict = users_db.get(username)
-    if not user_dict:
+    user = DB.users.get(username)
+
+    if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    user = UserInDB(**user_dict)
     hashed_password = fake_hash_password(password)
     if not hashed_password == user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
@@ -116,39 +58,14 @@ async def login(username: str, password: str):
 
 @app.get("/fruits")
 def read_fruits(current_user: User = Depends(get_current_user)) -> List:
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return get_fruits()
-
-
-@app.get("/fruits/{fruit_id}")
-def read_fruit(fruit_id: int, current_user: User = Depends(get_current_user)) -> Fruit:
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return fruits_db[fruit_id]
+    return DB.get_user_fruits(current_user.id)
 
 
 @app.post("/fruits")
 def create_fruits(
     fruit: CreateFruit, current_user: User = Depends(get_current_user)
 ) -> Fruit:
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    new_id = next(fruit_id_counter)
-    new_fruit = Fruit(id=new_id, name=fruit.name, created_at=datetime.now())
-    fruits_db[new_id] = new_fruit
+    new_fruit = DB.create_fruit(fruit, current_user.id)
 
     return new_fruit
 
@@ -157,33 +74,21 @@ def create_fruits(
 def update_fruit(
     fruit_id: int, fruit: CreateFruit, current_user: User = Depends(get_current_user)
 ) -> Fruit:
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if fruit_id in fruits_db:
-        fruits_db[fruit_id].name = fruit.name
-        return fruits_db[fruit_id]
-    else:
+    updated_fruit = DB.update_fruit(fruit_id, fruit, current_user.id)
+
+    if not updated_fruit:
         return {"error": "Fruit not found"}, 404
+
+    return updated_fruit
 
 
 @app.delete("/fruits/{fruit_id}")
 def delete_fruit(fruit_id: int, current_user: User = Depends(get_current_user)):
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if fruit_id in fruits_db:
-        name = fruits_db[fruit_id].name
-        del fruits_db[fruit_id]
+    name = DB.delete_fruit(fruit_id, current_user.id)
+
+    if name:
         return {"message": "Fruit " + name + " deleted"}
-    else:
-        return {"error": "Fruit not found"}, 404
+    return {"error": "Fruit not found"}, 404
 
 
 if __name__ == "__main__":
