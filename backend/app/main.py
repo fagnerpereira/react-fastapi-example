@@ -43,6 +43,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     return user
 
 
+@app.get("/up")
+async def up():
+    return {"status": "up"}
+
+
 @app.post("/token")
 async def login(username: str, password: str):
     user = DB.users.get(username)
