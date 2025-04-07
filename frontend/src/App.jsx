@@ -1,83 +1,8 @@
 import { useState, useEffect } from 'react'
-
-function Login({ onLogin }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin(username, password);
-  };
-
-  return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Username:
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Password:
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-        </div>
-        <button type="submit">Login</button>
-      </form>
-      <p>Use username: alice, password: secret2</p>
-    </div>
-  );
-}
-
-function FruitItem({ fruit, onUpdateFruit, onDeleteFruit }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [fruitName, setFruitName] = useState(fruit.name)
-
-  const handleUpdate = () => {
-    if (isEditing) {
-      onUpdateFruit(fruit.id, { name: fruitName });
-    }
-    setIsEditing(!isEditing);
-  };
-
-  return (
-    <tr key={fruit.id}>
-      <td>{fruit.id}</td>
-      <td>
-        {isEditing ? (
-          <input
-            type="text"
-            value={fruitName}
-            onChange={(e) => setFruitName(e.target.value)}
-          />
-        ) : (
-          fruitName
-        )}
-      </td>
-      <td>
-        <button onClick={handleUpdate}>
-          {isEditing ? 'Save' : 'Edit'}
-        </button>
-        <button onClick={() => onDeleteFruit(fruit.id)}>
-          Remove
-        </button>
-      </td>
-    </tr>
-  );
-}
+import FruitList from './components/fruits/FruitList.jsx'
+import FruitForm from './components/fruits/FruitForm.jsx';
+import LoginForm from './components/auth/LoginForm.jsx';
+import { API_URL, getAuthHeaders } from './services/api.js';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -86,7 +11,6 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const API_URL = 'http://localhost:8000'
 
   useEffect(() => {
     if (token) {
@@ -129,12 +53,10 @@ function App() {
 
     try {
       const response = await fetch(`${API_URL}/fruits`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       })
       const data = await response.json()
-
+      console.log('data', data)
       setFruits(data)
     } catch (error) {
       console.log(error)
@@ -143,13 +65,7 @@ function App() {
     }
   }
 
-  const createFruit = async (e) => {
-    e.preventDefault()
-
-    const newFruit = {
-      name: fruitName
-    }
-
+  const createFruit = async (fruitData) => {
     setLoading(true)
     setFruitName('')
 
@@ -158,9 +74,9 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeaders()
         },
-        body: JSON.stringify(newFruit)
+        body: JSON.stringify(fruitData)
       })
 
       const createdFruit = await response.json()
@@ -178,7 +94,7 @@ function App() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify(updatedData)
       });
@@ -194,9 +110,7 @@ function App() {
     try {
       await fetch(`${API_URL}/fruits/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
 
       setFruits(fruits.filter(fruit => fruit.id !== id));
@@ -212,50 +126,21 @@ function App() {
       {error && <p>{error}</p>}
 
       {!token ? (
-        <Login onLogin={handleLogin} />
+        <LoginForm onLogin={handleLogin} />
       ) : (
         <div>
           <button onClick={handleLogout}>Logout</button>
-          <form onSubmit={createFruit}>
-            <label>
-              Name:
-              <input
-                type="text"
-                value={fruitName}
-                onChange={(e) => setFruitName(e.target.value)}
-                required
-              />
-            </label>
-            <button>Add fruit</button>
-          </form>
 
-          <h2>My basket</h2>
+          <FruitForm
+            onCreateFruit={createFruit}
+          />
 
-          {
-            loading ? (
-              <p>Loading...</p>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fruits.map((fruit) => (
-                    <FruitItem
-                      key={fruit.id}
-                      fruit={fruit}
-                      onUpdateFruit={updateFruit}
-                      onDeleteFruit={deleteFruit}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            )
-          }
+          <FruitList
+            fruits={fruits}
+            loading={loading}
+            onUpdateFruit={updateFruit}
+            onDeleteFruit={deleteFruit}
+          />
         </div>
       )}
     </>

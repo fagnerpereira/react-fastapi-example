@@ -79,8 +79,8 @@ npm run dev
 - [x] Configure Docker for development
 - [ ] Configure Docker for production
 - [ ] Add deployment using Kamal
-- [ ] Improve backend code organization
-- [ ] Improve frontend code organization
-- [ ] Improve readme
+- [x] Improve backend code organization
+- [x] Improve frontend code organization
+- [x] Improve readme
 - [ ] Configure JWT
 - [ ] Configure Sqlite database
