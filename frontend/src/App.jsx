@@ -1,42 +1,54 @@
 import { useState, useEffect } from 'react'
 
+function Login({ onLogin }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-function FruitItem({ fruit, onDeleteFruit }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [fruitName, setFruitName] = useState(fruit.name)
-  const [fruits, setFruits] = useState([])
-
-  const updateFruit = async () => {
-    try {
-      const response = await fetch(`http://localhost:8000/fruits/${fruit.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: fruitName
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update todo');
-      }
-
-      const updated = await response.json();
-      console.log('updated', updated)
-    } catch (err) {
-      // setError(err.message);
-    } finally {
-      // setLoading(false);
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onLogin(username, password);
   };
 
+  return (
+    <div>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>
+            Username:
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            Password:
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+        </div>
+        <button type="submit">Login</button>
+      </form>
+      <p>Use username: alice, password: secret2</p>
+    </div>
+  );
+}
 
+function FruitItem({ fruit, onUpdateFruit, onDeleteFruit }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [fruitName, setFruitName] = useState(fruit.name)
 
   const handleUpdate = () => {
     if (isEditing) {
-      updateFruit(fruit.id);
+      onUpdateFruit(fruit.id, { name: fruitName });
     }
     setIsEditing(!isEditing);
   };
@@ -56,104 +68,196 @@ function FruitItem({ fruit, onDeleteFruit }) {
         )}
       </td>
       <td>
-        <button onClick={handleUpdate}>{isEditing ? 'Save' : 'Edit'}</button>
-        <button onClick={() => onDeleteFruit(fruit.id)}>Remove</button>
+        <button onClick={handleUpdate}>
+          {isEditing ? 'Save' : 'Edit'}
+        </button>
+        <button onClick={() => onDeleteFruit(fruit.id)}>
+          Remove
+        </button>
       </td>
     </tr>
   );
 }
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [fruitName, setFruitName] = useState('')
   const [fruits, setFruits] = useState([])
-  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const API_URL = 'http://localhost:8000'
 
   useEffect(() => {
-    const fetchFruits = async () => {
-      const r = await fetch('http://localhost:8000/fruits')
-      const data = await r.json()
-      setFruits(data)
+    if (token) {
+      readFruits()
     }
-    fetchFruits()
-  }, [])
+  }, [token])
 
-  const addFruit = async (e) => {
-    e.preventDefault()
+  const handleLogin = async (username, password) => {
+    setLoading(true);
+    setError('');
 
     try {
-      const r = await fetch('http://localhost:8000/fruits', {
+      const response = await fetch(`${API_URL}/token?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token'
-        },
-        body: JSON.stringify({
-          name: fruitName
-        })
-      })
+      });
 
-      if (!r.ok) {
-        throw new Error("Failed to add fruit");
+      if (!response.ok) {
+        throw new Error('Login failed');
       }
 
-      const newFruit = await r.json()
-      setFruits([...fruits, newFruit])
+      const data = await response.json();
+      setToken(data.access_token);
+      localStorage.setItem('token', data.access_token);
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken('');
+    localStorage.removeItem('token');
+    setFruits([]);
+  };
+
+  const readFruits = async () => {
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${API_URL}/fruits`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+
+      setFruits(data)
     } catch (error) {
       console.log(error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const deleteFruit = async (id) => {
-    // setLoading(true);
-    try {
-      console.log(id)
-      // const response = await fetch(`http://localhost:8000/fruits/${id}`, {
-      //   method: 'DELETE',
-      // });
+  const createFruit = async (e) => {
+    e.preventDefault()
 
-      // setFruits(fruits.filter(fruit => fruit.id !== id));
-    } catch (err) {
-      // setError(err.message);
+    const newFruit = {
+      name: fruitName
+    }
+
+    setLoading(true)
+    setFruitName('')
+
+    try {
+      const response = await fetch(`${API_URL}/fruits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newFruit)
+      })
+
+      const createdFruit = await response.json()
+      setFruits([...fruits, createdFruit])
+    } catch (error) {
+      console.log(error)
     } finally {
-      // setLoading(false);
+      setLoading(false)
+    }
+  }
+
+  const updateFruit = async (id, updatedData) => {
+    try {
+      const response = await fetch(`${API_URL}/fruits/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      const updated = await response.json();
+      console.log('updated', updated)
+    } catch (error) {
+      console.log(error);
     }
   };
+
+  const deleteFruit = async (id) => {
+    try {
+      await fetch(`${API_URL}/fruits/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      setFruits(fruits.filter(fruit => fruit.id !== id));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <>
-      <h2>Fruits</h2>
-      <form onSubmit={addFruit}>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={fruitName}
-            onChange={(e) => setFruitName(e.target.value)}
-            required
-          />
-        </label>
-        <button>Add fruit</button>
-      </form>
+      <h1>Fruits App</h1>
 
-      <h2>My basket</h2>
+      {error && <p>{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {fruits.map((fruit) => (
-            <FruitItem
-              key={fruit.id}
-              fruit={fruit}
-              onDeleteFruit={deleteFruit}
-            />
-          ))}
-        </tbody>
-      </table>
+      {!token ? (
+        <Login onLogin={handleLogin} />
+      ) : (
+        <div>
+          <button onClick={handleLogout}>Logout</button>
+          <form onSubmit={createFruit}>
+            <label>
+              Name:
+              <input
+                type="text"
+                value={fruitName}
+                onChange={(e) => setFruitName(e.target.value)}
+                required
+              />
+            </label>
+            <button>Add fruit</button>
+          </form>
+
+          <h2>My basket</h2>
+
+          {
+            loading ? (
+              <p>Loading...</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fruits.map((fruit) => (
+                    <FruitItem
+                      key={fruit.id}
+                      fruit={fruit}
+                      onUpdateFruit={updateFruit}
+                      onDeleteFruit={deleteFruit}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )
+          }
+        </div>
+      )}
     </>
   )
 }
