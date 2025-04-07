@@ -33,10 +33,10 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Runtime stage - using nginx to serve static files
-# FROM nginx:alpine
+FROM nginx:alpine
 
 # Copy built assets to nginx
-# COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx config that handles SPA routing
 # COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -44,4 +44,4 @@ RUN npm run build
 # Expose port 80
 EXPOSE 80
 
-# CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
