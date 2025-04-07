@@ -6,7 +6,7 @@ from typing import List, Annotated
 from .models import User, Fruit, CreateFruit
 from .database import DB
 
-origins = ["http://localhost:5173"]
+origins = ["http://localhost:5173", "https://fruitsapp.fpr.lol"]
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +41,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+@app.get("/up")
+async def up():
+    return {"status": "up"}
 
 
 @app.post("/token")
