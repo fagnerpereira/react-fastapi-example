@@ -2,6 +2,8 @@
 
 ![Fruits App Preview](fruits-basket-app.gif)
 
+The app is deployed with Kamal and Its available at [https://fruitsapp.fpr.lol/](https://fruitsapp.fpr.lol/)
+
 ## How To Use It
 
 ```bash
@@ -79,7 +81,7 @@ npm run dev
 - [x] Add authentication
 - [x] Configure Docker for development
 - [ ] Configure Docker for production
-- [ ] Add deployment using Kamal
+- [x] Add deployment using Kamal
 - [x] Improve backend code organization
 - [x] Improve frontend code organization
 - [x] Improve readme
