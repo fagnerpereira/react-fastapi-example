@@ -1,13 +1,13 @@
 import FruitItem from "./FruitItem"
 
-function FruitList({ fruits, onUpdateFruit, onDeleteFruit, loading }) {
+function FruitList({ currentUser, fruits, onUpdateFruit, onDeleteFruit, loading }) {
   if (loading) {
     return <p>Loading...</p>
   }
 
   return (
     <>
-      <h2>My basket</h2>
+      <h2>{currentUser.full_name}'s fruit basket</h2>
 
       <table>
         <thead>

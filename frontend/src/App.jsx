@@ -6,15 +6,16 @@ import { API_URL, getAuthHeaders } from './services/api.js';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [currentUser, setCurrentUser] = useState({})
   const [fruitName, setFruitName] = useState('')
   const [fruits, setFruits] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-
   useEffect(() => {
     if (token) {
       readFruits()
+      readCurrentUser()
     }
   }, [token])
 
@@ -48,6 +49,20 @@ function App() {
     setFruits([]);
   };
 
+  const readCurrentUser = async () => {
+    try {
+      const response = await fetch(`${API_URL}/users/me`, {
+        headers: getAuthHeaders()
+      })
+      const data = await response.json()
+      setCurrentUser(data)
+      console.log(data)
+      console.log(currentUser)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   const readFruits = async () => {
     setLoading(true)
 
@@ -56,7 +71,7 @@ function App() {
         headers: getAuthHeaders()
       })
       const data = await response.json()
-      console.log('data', data)
+
       setFruits(data)
     } catch (error) {
       console.log(error)
@@ -136,6 +151,7 @@ function App() {
           />
 
           <FruitList
+            currentUser={currentUser}
             fruits={fruits}
             loading={loading}
             onUpdateFruit={updateFruit}

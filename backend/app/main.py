@@ -56,6 +56,11 @@ async def login(username: str, password: str):
     return {"access_token": user.username, "token_type": "bearer"}
 
 
+@app.get("/users/me")
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @app.get("/fruits")
 def read_fruits(current_user: User = Depends(get_current_user)) -> List:
     return DB.get_user_fruits(current_user.id)

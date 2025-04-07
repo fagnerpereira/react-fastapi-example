@@ -22,6 +22,18 @@ def test_login_success():
     assert token_data["token_type"] == "bearer"
 
 
+def test_read_users_me(auth_token):
+    response = client.get(
+        "/users/me", headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    user = response.json()
+
+    assert response.status_code == 200
+    assert user["username"] == "johndoe"
+    assert user["full_name"] == "John Doe"
+    assert user["email"] == "johndoe@example.com"
+
+
 def test_read_fruits(auth_token):
     response = client.get("/fruits", headers={"Authorization": f"Bearer {auth_token}"})
     fruits = response.json()
