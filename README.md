@@ -1,5 +1,6 @@
 # Fruits App - React + FastAPI
 
+![Fruits App Preview](fruits-basket-app.gif)
 
 ## How To Use It
 
