@@ -11,14 +11,14 @@ class Database:
                 username="johndoe",
                 full_name="John Doe",
                 email="johndoe@example.com",
-                hashed_password="fakehashedsecret",
+                hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
             ),
             "alice": UserInDB(
                 id=2,
                 username="alice",
                 full_name="Alice Doe",
                 email="alice@example.com",
-                hashed_password="fakehashedsecret2",
+                hashed_password="$2b$12$sSe.JX82e.F7tymToom73OIX3aUtE3kYlXJrmmyJgoqJ4FNB08UnW",
             ),
         }
         self.fruits = {

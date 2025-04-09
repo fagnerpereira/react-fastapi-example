@@ -23,6 +23,7 @@ def test_login_success():
 
 
 def test_read_users_me(auth_token):
+    # breakpoint()
     response = client.get(
         "/users/me", headers={"Authorization": f"Bearer {auth_token}"}
     )
