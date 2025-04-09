@@ -24,7 +24,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 
 def verify_password(plain_password, hashed_password):
@@ -66,7 +66,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # breakpoint()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -102,7 +101,6 @@ async def login(username: str, password: str) -> Token:
 
 @app.get("/users/me")
 async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
-    # breakpoint()
     return current_user
 
 
@@ -123,22 +121,28 @@ def create_fruits(
 @app.put("/fruits/{fruit_id}")
 def update_fruit(
     fruit_id: int, fruit: CreateFruit, current_user: User = Depends(get_current_user)
-) -> Fruit:
-    updated_fruit = DB.update_fruit(fruit_id, fruit, current_user.id)
+):
+    if not DB.get_user_fruit(fruit_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fruit not found"
+        )
 
-    if not updated_fruit:
-        return {"error": "Fruit not found"}, 404
+    updated_fruit = DB.update_fruit(fruit_id, fruit, current_user.id)
 
     return updated_fruit
 
 
 @app.delete("/fruits/{fruit_id}")
 def delete_fruit(fruit_id: int, current_user: User = Depends(get_current_user)):
+    if not DB.get_user_fruit(fruit_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fruit not found"
+        )
+
     name = DB.delete_fruit(fruit_id, current_user.id)
 
     if name:
         return {"message": "Fruit " + name + " deleted"}
-    return {"error": "Fruit not found"}, 404
 
 
 if __name__ == "__main__":

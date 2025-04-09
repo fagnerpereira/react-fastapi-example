@@ -30,7 +30,7 @@ class Database:
     def get_user_fruits(self, id: str):
         return [fruit for fruit in self.fruits.values() if fruit.user_id == id]
 
-    def get_fruit(self, id: int, user_id: int):
+    def get_user_fruit(self, id: int, user_id: int):
         fruit = self.fruits.get(id)
 
         if not fruit or fruit.user_id != user_id:
@@ -48,13 +48,13 @@ class Database:
         return new_fruit
 
     def update_fruit(self, id: int, updated_fruit: Fruit, user_id: int):
-        fruit = self.get_fruit(id, user_id)
+        fruit = self.get_user_fruit(id, user_id)
         fruit.name = updated_fruit.name
 
         return fruit
 
     def delete_fruit(self, id: int, user_id: int):
-        fruit = self.get_fruit(id, user_id)
+        fruit = self.get_user_fruit(id, user_id)
 
         if fruit:
             name = DB.fruits[id].name
