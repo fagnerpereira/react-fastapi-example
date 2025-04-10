@@ -83,6 +83,15 @@ def test_update_fruit_without_auth():
     assert response.status_code == 401
 
 
+def test_update_fruit_from_another_user(auth_token):
+    response = client.put(
+        "/fruits/2",
+        json={"name": "kiwi"},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 404
+
+
 def test_delete_fruit(auth_token):
     response = client.delete(
         "/fruits/1", headers={"Authorization": f"Bearer {auth_token}"}
@@ -94,3 +103,10 @@ def test_delete_fruit(auth_token):
 def test_delete_fruit_without_auth():
     response = client.delete("/fruits/1")
     assert response.status_code == 401
+
+
+def test_delete_fruit_from_another_user(auth_token):
+    response = client.delete(
+        "/fruits/2", headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 404

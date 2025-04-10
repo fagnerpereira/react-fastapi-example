@@ -85,5 +85,5 @@ npm run dev
 - [x] Improve backend code organization
 - [x] Improve frontend code organization
 - [x] Improve readme
-- [ ] Configure JWT
+- [X] Configure JWT
 - [ ] Configure Sqlite database
