@@ -7,14 +7,24 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Annotated
 from .models import User, Fruit, CreateFruit, TokenData, Token
-from .database import DB
+from .database import DB, create_db_and_tables, get_session
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 import os
+from sqlmodel import Session
 
 load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
 origins = ["http://localhost:5173"]
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -42,12 +52,14 @@ def get_user(username: str):
     return DB.users.get(username)
 
 
-def authenticate_user(username: str, password: str):
-    user = DB.users.get(username)
+def authenticate_user(username: str, password: str, session: Session):
+    user = DB.get_user_by_username(session, username)
+
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
         return False
+
     return user
 
 
@@ -62,7 +74,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    session: Session = Depends(get_session),
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -78,16 +93,19 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     except InvalidTokenError:
         raise credentials_exception
 
-    user = DB.users.get(token_data.username)
+    user = DB.get_user_by_username(session, token_data.username)
 
     if user is None:
         raise credentials_exception
+
     return user
 
 
 @app.post("/token")
-async def login(username: str, password: str) -> Token:
-    user = authenticate_user(username, password)
+async def login(
+    username: str, password: str, session: Session = Depends(get_session)
+) -> Token:
+    user = authenticate_user(username, password, session)
 
     if not user:
         raise HTTPException(
@@ -108,41 +126,54 @@ async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]
 
 
 @app.get("/fruits")
-def read_fruits(current_user: User = Depends(get_current_user)) -> List:
-    return DB.get_user_fruits(current_user.id)
+def read_fruits(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> List:
+
+    return DB.get_user_fruits(session, current_user.id)
 
 
 @app.post("/fruits")
 def create_fruits(
-    fruit: CreateFruit, current_user: User = Depends(get_current_user)
+    fruit: CreateFruit,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ) -> Fruit:
-    new_fruit = DB.create_fruit(fruit, current_user.id)
+    new_fruit = DB.create_fruit(session, fruit, current_user.id)
 
     return new_fruit
 
 
 @app.put("/fruits/{fruit_id}")
 def update_fruit(
-    fruit_id: int, fruit: CreateFruit, current_user: User = Depends(get_current_user)
+    fruit_id: int,
+    fruit: CreateFruit,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ):
-    if not DB.get_user_fruit(fruit_id, current_user.id):
+    updated_fruit = DB.update_fruit(session, fruit_id, fruit, current_user.id)
+
+    if not updated_fruit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fruit not found"
         )
-
-    updated_fruit = DB.update_fruit(fruit_id, fruit, current_user.id)
 
     return updated_fruit
 
 
 @app.delete("/fruits/{fruit_id}")
-def delete_fruit(fruit_id: int, current_user: User = Depends(get_current_user)):
-    if not DB.get_user_fruit(fruit_id, current_user.id):
+def delete_fruit(
+    fruit_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    name = DB.delete_fruit(session, fruit_id, current_user.id)
+
+    if not name:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fruit not found"
         )
-
-    name = DB.delete_fruit(fruit_id, current_user.id)
 
     if name:
         return {"message": "Fruit " + name + " deleted"}

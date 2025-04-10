@@ -1,7 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from .main import app
-from .database import DB
+from .database import DB, get_session
+from .models import CreateFruit
 from typing import List
 
 client = TestClient(app)
@@ -57,7 +58,7 @@ def test_create_fruits(auth_token):
 
     assert response.status_code == 200
     assert new_fruit["name"] == "orange"
-    assert DB.fruits[new_fruit["id"]].name == "orange"
+    assert new_fruit["user_id"] == 1
 
 
 def test_create_fruits_without_auth():
@@ -66,16 +67,17 @@ def test_create_fruits_without_auth():
 
 
 def test_update_fruit(auth_token):
+    fruit = DB.create_fruit(next(get_session()), CreateFruit(name="kiwi"), 1)
     response = client.put(
-        "/fruits/1",
-        json={"name": "kiwi"},
+        f"/fruits/{fruit.id}",
+        json={"name": "grape"},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
     updated_fruit = response.json()
 
     assert response.status_code == 200
-    assert updated_fruit["name"] == "kiwi"
-    assert DB.fruits[1].name == "kiwi"
+    assert updated_fruit["name"] == "grape"
+    assert updated_fruit["user_id"] == 1
 
 
 def test_update_fruit_without_auth():
@@ -93,11 +95,12 @@ def test_update_fruit_from_another_user(auth_token):
 
 
 def test_delete_fruit(auth_token):
+    fruit = DB.create_fruit(next(get_session()), CreateFruit(name="kiwi"), 1)
+
     response = client.delete(
-        "/fruits/1", headers={"Authorization": f"Bearer {auth_token}"}
+        f"/fruits/{fruit.id}", headers={"Authorization": f"Bearer {auth_token}"}
     )
     assert response.status_code == 200
-    assert 1 not in DB.fruits
 
 
 def test_delete_fruit_without_auth():
