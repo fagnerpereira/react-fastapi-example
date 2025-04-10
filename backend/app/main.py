@@ -9,7 +9,10 @@ from typing import List, Annotated
 from .models import User, Fruit, CreateFruit, TokenData, Token
 from .database import DB
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 origins = ["http://localhost:5173"]
 app = FastAPI()
 app.add_middleware(
@@ -22,9 +25,9 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 
 def verify_password(plain_password, hashed_password):

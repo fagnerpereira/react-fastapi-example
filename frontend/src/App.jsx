@@ -37,7 +37,6 @@ function App() {
       localStorage.setItem('token', data.access_token);
     } catch (err) {
       setError(err.message);
-      console.error(err);
     } finally {
       setLoading(false);
     }
