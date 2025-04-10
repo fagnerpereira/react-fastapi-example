@@ -14,8 +14,8 @@ function App() {
 
   useEffect(() => {
     if (token) {
-      readFruits()
       readCurrentUser()
+      readFruits()
     }
   }, [token])
 
@@ -37,7 +37,6 @@ function App() {
       localStorage.setItem('token', data.access_token);
     } catch (err) {
       setError(err.message);
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -54,11 +53,15 @@ function App() {
       const response = await fetch(`${API_URL}/users/me`, {
         headers: getAuthHeaders()
       })
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
       const data = await response.json()
       setCurrentUser(data)
-      console.log(data)
-      console.log(currentUser)
     } catch (error) {
+      handleLogout()
       console.log(error)
     }
   }
