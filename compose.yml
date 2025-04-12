@@ -1,8 +1,13 @@
 services:
   backend:
     build: ./backend
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+      # - sqlite_data:/app/storage
     ports:
       - "8000:8000"
+    command: fastapi dev app/main.py --host 0.0.0.0 --port 8000
     restart: unless-stopped
 
   frontend:
@@ -17,3 +22,6 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:8000
     restart: unless-stopped
+
+# volumes:
+#   sqlite_data:
