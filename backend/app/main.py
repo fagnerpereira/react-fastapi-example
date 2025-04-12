@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-origins = ["http://localhost:5173"]
+
+origins = ["http://localhost:5173", "https://fruitsapp.fpr.lol"]
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -83,6 +84,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     if user is None:
         raise credentials_exception
     return user
+
+
+@app.get("/up")
+async def up():
+    return {"status": "up"}
 
 
 @app.post("/token")

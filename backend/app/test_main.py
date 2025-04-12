@@ -14,6 +14,11 @@ def auth_token():
     return token_data["access_token"]
 
 
+def test_up():
+    response = client.get("/up")
+    assert response.status_code == 200
+
+
 def test_login_success():
     response = client.post(f"/token?username=johndoe&password=secret")
     assert response.status_code == 200
