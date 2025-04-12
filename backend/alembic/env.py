@@ -23,6 +23,7 @@ if config.config_file_name is not None:
 db_url = os.getenv("SQLITE_DATABASE_URL")
 config.set_main_option("sqlalchemy.url", db_url)
 
+# breakpoint()
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
