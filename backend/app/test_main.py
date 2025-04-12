@@ -1,9 +1,24 @@
+import os
+
+os.environ["FASTAPI_ENV"] = "test"
+
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env.test")
+
 import pytest
 from fastapi.testclient import TestClient
 from .main import app
 from .database import DB, get_session
 from .models import CreateFruit
 from typing import List
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    DB.reset_database()
+    DB.seed_initial_data()
+
 
 client = TestClient(app)
 

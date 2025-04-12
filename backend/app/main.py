@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Annotated
 from .models import User, Fruit, CreateFruit, TokenData, Token
-from .database import DB, create_db_and_tables, get_session
+from .database import DB, get_session
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
@@ -19,7 +19,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    # create_db_and_tables()
     yield
 
 

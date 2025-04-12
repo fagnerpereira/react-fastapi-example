@@ -1,19 +1,21 @@
+import os
+from dotenv import load_dotenv
+
 from .models import User, Fruit, CreateFruit
 from datetime import datetime
 from sqlmodel import SQLModel, create_engine, Session, select
-from dotenv import load_dotenv
 from typing import Generator, Optional, List
-import os
 
-load_dotenv()
+env = os.getenv("FASTAPI_ENV", "development")
+load_dotenv(dotenv_path=f".env.{env}")
 
 SQLITE_DATABASE_URL = os.getenv("SQLITE_DATABASE_URL")
 
 engine = create_engine(SQLITE_DATABASE_URL, connect_args={"check_same_thread": False})
 
 
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+# def create_db_and_tables():
+#     SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -24,10 +26,10 @@ def get_session() -> Generator[Session, None, None]:
 class SQLiteDatabase:
     def __init__(self):
         # Initialize the database and seed initial data
-        create_db_and_tables()
-        self._seed_initial_data()
+        self.create_tables()
+        self.seed_initial_data()
 
-    def _seed_initial_data(self):
+    def seed_initial_data(self):
         with Session(engine) as session:
             # Check if we have users
             user_exists = session.exec(select(User)).first() is not None
@@ -36,12 +38,14 @@ class SQLiteDatabase:
                 # Create initial users
                 users = [
                     User(
+                        id=1,
                         username="johndoe",
                         full_name="John Doe",
                         email="johndoe@example.com",
                         hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
                     ),
                     User(
+                        id=2,
                         username="alice",
                         full_name="Alice Doe",
                         email="alice@example.com",
@@ -57,13 +61,31 @@ class SQLiteDatabase:
 
                 # Create initial fruits
                 fruits = [
-                    Fruit(name="apple", created_at=datetime.now(), user_id=users[0].id),
                     Fruit(
-                        name="banana", created_at=datetime.now(), user_id=users[1].id
+                        id=1,
+                        name="apple",
+                        # created_at=datetime.now(),
+                        user_id=1,
+                    ),
+                    Fruit(
+                        id=2,
+                        name="banana",
+                        # created_at=datetime.now(),
+                        user_id=2,
                     ),
                 ]
                 session.add_all(fruits)
                 session.commit()
+
+    def reset_database(self):
+        self.drop_tables()
+        self.create_tables()
+
+    def drop_tables(self):
+        SQLModel.metadata.drop_all(engine)
+
+    def create_tables(self):
+        SQLModel.metadata.create_all(engine)
 
     def get_user_by_username(self, session: Session, username: str) -> Optional[User]:
         return session.exec(select(User).where(User.username == username)).first()
