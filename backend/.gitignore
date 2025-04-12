@@ -4,4 +4,4 @@ __pycache__
 .env.development
 .env.production
 .env.test
-# storage/*
+storage/*.db
