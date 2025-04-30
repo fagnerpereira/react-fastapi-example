@@ -1,4 +1,7 @@
 __pycache__
 *.pyc
 .venv
-.env
+.env.development
+.env.production
+.env.test
+storage/*.db

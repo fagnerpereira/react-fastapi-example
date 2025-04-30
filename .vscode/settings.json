@@ -3,5 +3,9 @@
         "backend"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "/home/fpr/.local/share/mise/shims/node"
+    },
+    "python.defaultInterpreterPath": "/home/fpr/.local/share/mise/installs/python/3.13.2/bin/python"
 }

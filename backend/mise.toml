@@ -1,0 +1,12 @@
+[settings]
+python.uv_venv_auto = true
+
+[env]
+FASTAPI_ENV = "development"
+
+[tasks.migrate]
+run = 'alembic upgrade head'
+
+[tasks.migrate-test]
+env = { FASTAPI_ENV = "test" }
+run = 'alembic upgrade head'
